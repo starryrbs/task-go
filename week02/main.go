@@ -1,44 +1,33 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"github.com/pkg/errors"
 )
 
-func main() {
-	c := make(chan os.Signal)
-	//监听指定信号 ctrl+c kill
-	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+/*
+1. 我们在数据库操作的时候，比如 dao 层中当遇到一个 sql.ErrNoRows 的时候，是否应该 Wrap 这个 error，
+抛给上层。为什么，应该怎么做请写出代码？
+*/
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	g, errCtx := errgroup.WithContext(ctx)
-	srv := &http.Server{Addr: ":9090"}
-	// serve http
-	g.Go(func() error {
-		return srv.ListenAndServe()
-	})
-	// 关闭http server
-	g.Go(func() error {
-		<-errCtx.Done()
-		return srv.Shutdown(errCtx)
-	})
-	// 处理signal
-	g.Go(func() error {
-		select {
-		case <-errCtx.Done():
-			return errCtx.Err()
-		case <-c:
-			cancel()
-		}
-		return nil
-	})
-	err := g.Wait()
-	fmt.Println(err)
-	fmt.Println(ctx.Err())
+/*
+答：在dao层应该wrap这个error，因为我们想要在biz层知道详细的错误信息及堆栈信息
+*/
+
+// dao
+
+var NoRowsError = errors.New("No errors")
+
+func Get() error {
+	sql := ""
+	return errors.Wrap(NoRowsError, fmt.Sprintf("not found,sql:%s", sql))
+}
+
+// biz
+
+func main() {
+	err := Get()
+	if errors.Is(err, NoRowsError) {
+		println("not found", err.Error())
+	}
 }

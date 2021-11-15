@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/task-go/week04/internal/conf"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -13,11 +15,6 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "configs/config.yaml", "config path, eg: -conf config.yaml")
 }
 
-type Config struct {
-	Address string `yaml:"address"`
-	Port    int    `yaml:"port"`
-}
-
 func main() {
 	flag.Parse()
 
@@ -26,11 +23,17 @@ func main() {
 		panic(err)
 	}
 
-	var cfg Config
-	err = yaml.Unmarshal(bytes, &cfg)
+	var c conf.Conf
+	err = yaml.Unmarshal(bytes, &c)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("%+v", cfg)
+	fmt.Printf("%+v", c)
+
+	app, err := initApp(context.Background(), &c)
+	if err != nil {
+		panic(err)
+	}
+	app.Run(c.Server.Address)
 }

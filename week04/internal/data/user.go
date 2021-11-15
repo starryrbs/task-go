@@ -45,7 +45,12 @@ func (up *userRepo) GetUser(ctx context.Context, id int64) (*biz.User, error) {
 
 func (up userRepo) CreateUser(ctx context.Context, user *biz.User) error {
 	_, err := up.data.db.User.
-		Create().SetName(user.Name).Save(ctx)
+		Create().
+		SetName(user.Name).
+		SetCreatedAt(user.CreatedAt).
+		SetID(user.ID).
+		SetEmail(user.Email).
+		Save(ctx)
 	return err
 }
 
